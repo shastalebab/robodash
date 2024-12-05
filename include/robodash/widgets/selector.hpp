@@ -18,13 +18,13 @@ namespace rd {
  */
 class Selector {
   public:
-	typedef std::function<void()> routine_action_t;
+	using RoutineFunction = std::function<void()>;
 
-	typedef struct routine {
+	struct Routine {
 		std::string name;
-		routine_action_t action;
-		std::string img = "";
-	} routine_t;
+		RoutineFunction function;
+		std::string image = "";
+	};
 
 	/**
 	 * Create autonomous selector
@@ -32,14 +32,14 @@ class Selector {
 	 * @param name Name of the autonomous selector
 	 * @param autons Vector of autonomous rotuines
 	 */
-	Selector(std::string name, std::vector<routine_t> autons);
+	Selector(std::string name, std::vector<Routine> autons);
 
 	/**
 	 * Create autonomous selector
 	 *
 	 * @param autons Vector of autonomous rotuines
 	 */
-	Selector(std::vector<routine_t> autons);
+	Selector(std::vector<Routine> autons);
 
 	/**
 	 * Run selected auton
@@ -59,8 +59,8 @@ class Selector {
 	lv_obj_t *selected_img;
 
 	std::string name;
-	std::vector<rd::Selector::routine_t> routines;
-	rd::Selector::routine_t *selected_routine;
+	std::vector<rd::Selector::Routine> routines;
+	std::optional<rd::Selector::Routine> selected_routine;
 
 	static void select_cb(lv_event_t *event);
 };
