@@ -9,33 +9,31 @@ const std::string file_path = "/usd/robodash/selector.txt";
 
 void rd::Selector::select_cb(lv_event_t *event) {
 	lv_obj_t *obj = lv_event_get_target(event);
-	rd::Selector::routine_t *routine = (rd::Selector::routine_t *)lv_event_get_user_data(event);
+	rd::Selector::Routine *routine = (rd::Selector::Routine *)lv_event_get_user_data(event);
 	rd::Selector *selector = (rd::Selector *)lv_obj_get_user_data(obj);
 	if (selector == nullptr) return;
 
-	selector->selected_routine = routine;
+	std::vector<Routine> &routines = selector->routines;
+	bool valid_routine = std::find(routines.begin(), routines.end(), *selector) != routines.end();
+	if (!valid_routine) return;
+
+	selector->selected_routine = *routine;
 
 	if (pros::usd::is_installed()) {
 		rd::util::KVStore kv_store(file_path);
 		kv_store.set(selector->name, selector->selected_routine->name);
 	}
 
-	if (routine == nullptr) {
-		lv_label_set_text(selector->selected_label, "No routine\nselected");
-		lv_obj_add_flag(selector->selected_img, LV_OBJ_FLAG_HIDDEN);
-		return;
-	}
-
-	std::string label_str = "Selected routine:\n" + routine->name;
+	std::string label_str = "Selected:\n" + routine->name;
 	lv_label_set_text(selector->selected_label, label_str.c_str());
 	lv_obj_align(selector->selected_label, LV_ALIGN_CENTER, 120, 0);
 
-	if (routine->img.empty() || !pros::usd::is_installed()) {
+	if (routine->image.empty() || !pros::usd::is_installed()) {
 		lv_obj_add_flag(selector->selected_img, LV_OBJ_FLAG_HIDDEN);
 		return;
 	}
 
-	lv_img_set_src(selector->selected_img, routine->img.c_str());
+	lv_img_set_src(selector->selected_img, routine->image.c_str());
 	lv_obj_clear_flag(selector->selected_img, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -75,12 +73,6 @@ rd::Selector::Selector(std::string name, std::vector<Routine> new_routines) : vi
 	lv_obj_add_style(selected_label, &style_text_centered, 0);
 	lv_obj_add_style(selected_label, &style_text_medium, 0);
 
-	lv_obj_t *nothing_btn = lv_list_add_btn(routine_list, NULL, "Nothing");
-	lv_obj_add_event_cb(nothing_btn, &select_cb, LV_EVENT_PRESSED, nullptr);
-	lv_obj_set_user_data(nothing_btn, this);
-	lv_obj_add_style(nothing_btn, &style_list_btn, 0);
-	lv_obj_add_style(nothing_btn, &style_list_btn_pr, LV_STATE_PRESSED);
-
 	lv_obj_t *title = lv_label_create(view);
 	lv_label_set_text(title, "Select autonomous routine");
 	lv_obj_add_style(title, &style_text_large, 0);
@@ -95,6 +87,8 @@ rd::Selector::Selector(std::string name, std::vector<Routine> new_routines) : vi
 	}
 
 	// ----------------------------- Add autons ----------------------------- //
+
+	new_routines.push_back({"Nothing", []() {}});
 
 	for (Routine routine : new_routines) {
 		if (!routine.image.empty()) {
