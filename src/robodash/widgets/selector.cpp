@@ -41,11 +41,11 @@ void rd::Selector::select_cb(lv_event_t *event) {
 
 // ============================== Constructor ============================== //
 
-rd::Selector::Selector(std::vector<routine_t> autons) : Selector("Auton Selector", autons) {}
+rd::Selector::Selector(std::vector<Routine> autons) : Selector("Auton Selector", autons) {}
 
-rd::Selector::Selector(std::string name, std::vector<routine_t> new_routines) : view(name) {
+rd::Selector::Selector(std::string name, std::vector<Routine> new_routines) : view(name) {
 	this->name = name;
-	this->selected_routine = nullptr;
+	this->selected_routine = std::nullopt;
 
 	// ----------------------------- Create UI ----------------------------- //
 
@@ -96,15 +96,15 @@ rd::Selector::Selector(std::string name, std::vector<routine_t> new_routines) : 
 
 	// ----------------------------- Add autons ----------------------------- //
 
-	for (routine_t routine : new_routines) {
-		if (!routine.img.empty()) {
-			routine.img.insert(0, "S:");
+	for (Routine routine : new_routines) {
+		if (!routine.image.empty()) {
+			routine.image.insert(0, "S:");
 		}
 
 		routines.push_back(routine);
 	}
 
-	for (routine_t &routine : routines) {
+	for (Routine &routine : routines) {
 		lv_obj_t *new_btn = lv_list_add_btn(routine_list, NULL, routine.name.c_str());
 		lv_obj_add_style(new_btn, &style_list_btn, 0);
 		lv_obj_add_style(new_btn, &style_list_btn_pr, LV_STATE_PRESSED);
@@ -117,18 +117,18 @@ rd::Selector::Selector(std::string name, std::vector<routine_t> new_routines) : 
 		std::optional<std::string> saved_name = kv_store.get<std::string>(name);
 		if (!saved_name) return;
 
-		for (rd::Selector::routine_t &r : routines) {
-			if (r.name == saved_name.value()) selected_routine = &r;
+		for (rd::Selector::Routine &r : routines) {
+			if (r.name == saved_name.value()) selected_routine = r;
 		}
 
-		if (selected_routine != nullptr) {
+		if (selected_routine.has_value()) {
 			// Update routine label
 			std::string label_str = "Selected routine:\n" + saved_name.value();
 			lv_label_set_text(selected_label, label_str.c_str());
 
-			if (selected_routine->img.empty()) return;
+			if (selected_routine->image.empty()) return;
 
-			lv_img_set_src(this->selected_img, selected_routine->img.c_str());
+			lv_img_set_src(this->selected_img, selected_routine->image.c_str());
 			lv_obj_clear_flag(this->selected_img, LV_OBJ_FLAG_HIDDEN);
 		}
 	}
@@ -137,8 +137,7 @@ rd::Selector::Selector(std::string name, std::vector<routine_t> new_routines) : 
 // ============================= Other Methods ============================= //
 
 void rd::Selector::run_auton() {
-	if (selected_routine == nullptr) return; // If commanded to do nothing then return
-	selected_routine->action();
+	if (selected_routine.has_value()) selected_routine->function();
 }
 
 void rd::Selector::focus() { view.focus(); }
